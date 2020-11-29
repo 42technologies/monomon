@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
 
-IGNORE_PACKAGES=()
+set -ex
 
+COMMAND_LINE=()
+
+COMMAND_LINE+=('--watch')
+COMMAND_LINE+=('.')
+
+COMMAND_LINE+=('--ext')
+COMMAND_LINE+=('js,jsx,ts,tsx,coffee,json,yml,yaml')
+
+# COMMAND_LINE+=('--ignore')
+# COMMAND_LINE+=('**/build/**')
+
+IGNORE_PACKAGES=()
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -12,7 +24,7 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     shift # past value
     ;;
-  *) # unknown option
+  *)                   # unknown option
     POSITIONAL+=("$1") # save it in an array for later
     shift              # past argument
     ;;
@@ -20,21 +32,85 @@ while [[ $# -gt 0 ]]; do
 done
 set -- "${POSITIONAL[@]}" # restore positional parameters
 
-COMMAND_LINE=()
-COMMAND_LINE+=('--watch')
-COMMAND_LINE+=('.')
 
-for PACKAGE_DIR in $(find node_modules/* -type l -maxdepth 1); do
+# Query a value from a package.json file
+function query_package {
+  local query="$1"
+  local pkg_filepath="$2"
+
+  # If the package.json doesn't exist, then exit early
+  [[ ! -f "$pkg_filepath" ]] && return
+
+  npx json "$query" < "$pkg_filepath" || true
+}
+
+
+function get_build_dir {
+  local package_dir="${1:-.}";
+  local package_file="$package_dir/package.json";
+  local builddir;
+
+  builddir=$(query_package directories.build "$package_file")
+  [[ -z "$builddir" ]] && return;
+
+  builddir="$package_dir/$builddir"
+  echo "$builddir"
+}
+
+
+function list_local_package_dirs {
+  local current_scope;
+  current_scope="$(query_package name ./package.json)"
+
+  [[ -z "$current_scope" ]] && return;
+
+  npx lerna list \
+    --include-dependencies \
+    --loglevel=error \
+    --json \
+    --all \
+    --scope "$current_scope" \
+  | npx json -c "this.name != '$current_scope'" -a location
+}
+
+
+function get_local_package_watch_dir {
+  local package_dir="$1";
+  local watchdir;
+
+  # 1. try 'directories.build'
+  watchdir=$(get_build_dir "$package_dir")
+
+  # 2. try directory of 'main'
+  if [[ ! -d "$watchdir" ]]; then
+    package_main=$(query_package .main "$pkg_filepath");
+    package_main="$package_dir/$package_main";
+    watchdir="$(dirname "$package_main")";
+  fi
+
+  # 3. use the full package.json directory
+  if [[ ! -d "$watchdir" ]]; then
+    watchdir=$(realpath "$package_dir")
+  fi
+
+  echo "$watchdir"
+}
+
+while read -r package_dir; do
+
   # trick from https://stackoverflow.com/a/15394738/1234037
-  if [[ " ${IGNORE_PACKAGES[@]} " =~ " ${PACKAGE_DIR} " ]]; then
+  # shellcheck disable=SC2199,SC2076
+  if [[ " ${IGNORE_PACKAGES[@]} " =~ " ${package_dir} " ]]; then
     continue
   fi
-  COMMAND_LINE+=('--watch')
-  COMMAND_LINE+=("$(realpath ${PACKAGE_DIR})")
+
+  COMMAND_LINE+=("--watch")
+  COMMAND_LINE+=("$(get_local_package_watch_dir "$package_dir")")
+
   COMMAND_LINE+=('--ignore')
-  COMMAND_LINE+=("$(realpath ${PACKAGE_DIR})/node_modules/**/*")
-done
+  COMMAND_LINE+=("$package_dir/node_modules/**/*")
 
-# echo nodemon "${COMMAND_LINE[@]}" "$@"
+done < <(list_local_package_dirs)
 
-nodemon "${COMMAND_LINE[@]}" "$@"
+echo "npx nodemon" "${COMMAND_LINE[@]}" "$@"
+npx nodemon "${COMMAND_LINE[@]}" "$@"

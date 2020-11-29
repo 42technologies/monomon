@@ -1,20 +1,30 @@
 {
-  "name": "linkemon",
+  "name": "@42technologies/linkemon",
+  "private": true,
   "description": "Wrapper script around nodemon that will automatically watch all linked modules",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "author": {
     "name": "Mario Casciaro"
   },
-  "homepage": "https://github.com/mariocasciaro/linkemon",
+  "contributors": [
+    "Nick Porter <github@surj.email>"
+  ],
+  "homepage": "https://github.com/42technologies/linkemon.git",
   "repository": {
     "type": "git",
-    "url": "git://github.com/mariocasciaro/linkemon.git"
+    "url": "git://github.com/42technologies/linkemon.git"
+  },
+  "main": "bin/linkemon",
+  "directories": {
+    "lib": "bin"
   },
   "bin": {
     "linkemon": "bin/linkemon"
   },
   "preferGlobal": true,
-  "peerDependencies": {
+  "dependencies": {
+    "json": "^10.0.0",
+    "lerna": "^3.22.1",
     "nodemon": "^2.0.6"
   },
   "keywords": [
