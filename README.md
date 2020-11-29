@@ -1,4 +1,4 @@
-linkemon
+monomon
 ===========
 
 A tiny wrapper around [nodemon](https://github.com/remy/nodemon) that will automatically
@@ -12,17 +12,17 @@ Use the script as you would normally use `nodemon`. Behind the scenes the script
 linked module in the `./node_modules` directory to the watchlist. For example:
 
 ```
-linkemon -V server.js
+monomon -V server.js
 ```
 
 ## Arguments
 
-The following arguments  are used directly by `linkemon` and therefore will not be forwarded to `nodemon`.
+The following arguments  are used directly by `monomon` and therefore will not be forwarded to `nodemon`.
 
 ### --ignorePackage
 
 Excludes a specific linked package from the watchlist
 
 ```
-linkemon --ignorePackage myLinkedPackage1 --ignorePackage myLinkedPackage2 server.js
+monomon --ignorePackage myLinkedPackage1 --ignorePackage myLinkedPackage2 server.js
 ```

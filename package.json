@@ -1,5 +1,5 @@
 {
-  "name": "@42technologies/linkemon",
+  "name": "@42technologies/monomon",
   "private": true,
   "description": "Wrapper script around nodemon that will automatically watch all linked modules",
   "version": "2.0.1",
@@ -9,17 +9,17 @@
   "contributors": [
     "Nick Porter <github@surj.email>"
   ],
-  "homepage": "https://github.com/42technologies/linkemon.git",
+  "homepage": "https://github.com/42technologies/monomon.git",
   "repository": {
     "type": "git",
-    "url": "git://github.com/42technologies/linkemon.git"
+    "url": "git://github.com/42technologies/monomon.git"
   },
-  "main": "bin/linkemon",
+  "main": "bin/monomon",
   "directories": {
     "lib": "bin"
   },
   "bin": {
-    "linkemon": "bin/linkemon"
+    "monomon": "bin/monomon"
   },
   "preferGlobal": true,
   "dependencies": {
