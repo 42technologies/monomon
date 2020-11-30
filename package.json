@@ -16,7 +16,11 @@
   },
   "main": "bin/monomon",
   "directories": {
-    "lib": "bin"
+    "lib": "bin",
+    "build": "bin"
+  },
+  "rollup": {
+    "skip": true
   },
   "bin": {
     "monomon": "bin/monomon"
