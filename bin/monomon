@@ -1,11 +1,11 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 set -e
 
 COMMAND_LINE=()
 
-COMMAND_LINE+=('--watch')
-COMMAND_LINE+=('.')
+# COMMAND_LINE+=('--watch')
+# COMMAND_LINE+=('.')
 
 COMMAND_LINE+=('--ext')
 COMMAND_LINE+=('js,jsx,ts,tsx,coffee,json,yml,yaml')
@@ -13,7 +13,20 @@ COMMAND_LINE+=('js,jsx,ts,tsx,coffee,json,yml,yaml')
 # COMMAND_LINE+=('--ignore')
 # COMMAND_LINE+=('**/build/**')
 
-IGNORE_PACKAGES=()
+
+function get_package_location {
+  npx lerna list \
+    --loglevel=error \
+    --json \
+    --all \
+    --scope "$1" \
+  | npx json -a location
+}
+
+
+IGNORE_PACKAGES=(
+  "$(get_package_location @42technologies/monomon)"
+)
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -58,7 +71,7 @@ function get_build_dir {
 }
 
 
-function list_local_package_dirs {
+function get_dependency_locations {
   local current_scope;
   current_scope="$(query_package name ./package.json)"
 
@@ -73,7 +86,6 @@ function list_local_package_dirs {
   | npx json -c "this.name != '$current_scope'" -a location
 }
 
-
 function get_local_package_watch_dir {
   local package_dir="$1";
   local watchdir;
@@ -82,14 +94,16 @@ function get_local_package_watch_dir {
   watchdir=$(get_build_dir "$package_dir")
 
   # 2. try directory of 'main'
-  if [[ ! -d "$watchdir" ]]; then
+  if [[ -z "$watchdir" ]] || [[ ! -d "$watchdir" ]]; then
     package_main=$(query_package .main "$pkg_filepath");
-    package_main="$package_dir/$package_main";
-    watchdir="$(dirname "$package_main")";
+    if [[ -n "$package_main" ]]; then
+      package_main="$package_dir/$package_main";
+      watchdir="$(dirname "$package_main")";
+    fi
   fi
 
   # 3. use the full package.json directory
-  if [[ ! -d "$watchdir" ]]; then
+  if [[ -z "$watchdir" ]] || [[ ! -d "$watchdir" ]]; then
     watchdir=$(realpath "$package_dir")
   fi
 
@@ -104,13 +118,16 @@ while read -r package_dir; do
     continue
   fi
 
+  watchdir=$(get_local_package_watch_dir "$package_dir")
+  [[ -z "$watchdir" ]] && continue;
+
   COMMAND_LINE+=("--watch")
-  COMMAND_LINE+=("$(get_local_package_watch_dir "$package_dir")")
+  COMMAND_LINE+=("$watchdir")
 
   COMMAND_LINE+=('--ignore')
   COMMAND_LINE+=("$package_dir/node_modules/**/*")
 
-done < <(list_local_package_dirs)
+done < <(get_dependency_locations)
 
 echo "npx nodemon" "${COMMAND_LINE[@]}" "$@"
-npx nodemon "${COMMAND_LINE[@]}" "$@"
+exec nodemon "${COMMAND_LINE[@]}" "$@"
