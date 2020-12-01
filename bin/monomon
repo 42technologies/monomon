@@ -14,6 +14,13 @@ COMMAND_LINE+=('js,jsx,ts,tsx,coffee,json,yml,yaml')
 # COMMAND_LINE+=('**/build/**')
 
 
+function node_realpath {
+  node -e \
+    "console.log(require('fs').realpathSync(process.argv[1]))" \
+    "$1"
+}
+
+
 function get_package_location {
   npx lerna list \
     --loglevel=error \
@@ -70,11 +77,9 @@ function get_build_dir {
   echo "$builddir"
 }
 
-
-function get_dependency_locations {
+function get_dependencies {
   local current_scope;
   current_scope="$(query_package name ./package.json)"
-
   [[ -z "$current_scope" ]] && return;
 
   npx lerna list \
@@ -83,7 +88,15 @@ function get_dependency_locations {
     --json \
     --all \
     --scope "$current_scope" \
-  | npx json -c "this.name != '$current_scope'" -a location
+  | npx json -c "this.name != '$current_scope'"
+}
+
+function get_dependency_locations {
+  get_dependencies | npx json -a location
+}
+
+function get_dependency_names {
+  get_dependencies | npx json -a name
 }
 
 function get_local_package_watch_dir {
@@ -104,7 +117,7 @@ function get_local_package_watch_dir {
 
   # 3. use the full package.json directory
   if [[ -z "$watchdir" ]] || [[ ! -d "$watchdir" ]]; then
-    watchdir=$(realpath "$package_dir")
+    watchdir=$(node_realpath "$package_dir")
   fi
 
   echo "$watchdir"
